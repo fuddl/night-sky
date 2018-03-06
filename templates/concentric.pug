@@ -1,0 +1,99 @@
+mixin concentric-grid(labels)
+  - function toRadians(angle) { return angle * (Math.PI / 180) }
+  - function copyAttributes(attributes) { return JSON.parse(JSON.stringify(attributes)) }
+  - function guid() { function s4() { return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1); } return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4(); }
+  mixin concentric-grid__circle
+    - var dasharray = '';
+    - var fullCircle = 2*Math.PI*attributes.r;
+    if attributes['max-arc']
+      - var circlePart = toRadians(attributes['max-arc'] - attributes['min-arc'])*attributes.r;
+      - var dashArray = circlePart + ',' + (fullCircle-circlePart);
+    if attributes['min-arc']
+      //- firefox needs offset of /*+.00022*/
+      - var dashArrayOffset = ((toRadians(attributes['min-arc']))*attributes.r)*-1;
+    circle(cx=attributes.cx cy=attributes.cy r=attributes.r stroke=attributes.stroke fill='none' stroke-width=attributes['stroke-width'] stroke-dasharray=dashArray stroke-dashoffset=dashArrayOffset)
+  
+  mixin concentric-grid__labels(labels)
+    - var id = 'circle-' + guid();
+    - var textOffset = .5;
+    - var textR = attributes.r - textOffset;
+    +circlePath(cx=attributes.cx, cy=attributes.cy, r=textR, id=id, fill='none')
+    text(font-size="1", text-align="right", fill=attributes.stroke)
+      if !attributes['min-arc']
+        - attributes['min-arc'] = 0;
+      - var arc = 360;
+      if attributes['max-arc']
+        - arc = attributes['max-arc'] - attributes['min-arc'];
+      - var n = 1;
+      - var a = arc / attributes['radial-subdivisions'];
+      while n < attributes['radial-subdivisions'] + 1
+        if labels[n-1]
+          //- for a clockwise path
+          - var offset = (toRadians(attributes['min-arc'])*textR) + (toRadians(a)*n)*textR + textOffset;
+          //- for a counter clockwise path
+          //- var offset = (Math.PI*2)*textR - (toRadians(attributes['min-arc'])*textR) - (toRadians(a)*n)*textR + textOffset;
+          - var textWidth = (toRadians(a) * textR) + textOffset
+          textPath(href='#' + id, startOffset=offset, width="100")= labels[n-1]
+        - n++;
+
+  
+  // inner circle
+  - var circle_attributes = copyAttributes(attributes);
+  - circle_attributes.r = attributes['min-r'];
+  +concentric-grid__circle&attributes(circle_attributes)
+  
+  // outer circle
+  +concentric-grid__circle&attributes(attributes)
+  
+  // subdivision circles
+  - var n = 1;
+  while n < attributes['concentric-subdivisions'] + 1
+    - var rSum = (attributes.r - attributes['min-r']) / (attributes['concentric-subdivisions'] + 1);
+    - var circle_attributes = copyAttributes(attributes);
+    - circle_attributes.r = (rSum * n) + attributes['min-r'];
+    +concentric-grid__circle&attributes(circle_attributes)
+    - n++;
+  if labels
+    - var n = 1;
+    while n < attributes['concentric-subdivisions'] + 2 
+      - var rSum = (attributes.r - attributes['min-r']) / (attributes['concentric-subdivisions'] + 1);
+      - var circle_attributes = copyAttributes(attributes);
+      - circle_attributes.r = (rSum * n) + attributes['min-r'];
+      +concentric-grid__labels(labels[n-1])&attributes(circle_attributes)
+      - n++;
+  // radial subdivisions
+  - var arc = 360;
+  if attributes['max-arc']
+    - arc = attributes['max-arc'] - attributes['min-arc'];
+  - var dashArray = '';
+  - var dashArrayOffset = 0;
+  if attributes['min-r']
+    - dashArray = attributes['min-r'] + ',' + attributes['min-r'] + ',' + attributes['r'];
+    - dashArrayOffset = attributes['min-r'];
+  - var a = arc / attributes['radial-subdivisions'];
+  - var n = 0;
+  - var offset = 0;
+  if attributes['min-arc']
+    - offset = toRadians(attributes['min-arc']);
+  while n < attributes['radial-subdivisions'] + 1
+    - var startX = attributes.cx;
+    - var startY = attributes.cy;
+    - var endX = Math.cos(toRadians(a*n)+offset) * attributes.r + attributes.cx;
+    - var endY = Math.sin(toRadians(a*n)+offset) * attributes.r + attributes.cy;
+    line(x1=startX, y1=startY, x2=endX, y2=endY, stroke=attributes.stroke, stroke-width=attributes['stroke-width'], stroke-dasharray=dashArray, stroke-dashoffset=dashArrayOffset)
+    - n++;
+
+mixin circlePath
+  - var cx = attributes.cx;
+  - var cy = attributes.cy;
+  - var r = attributes.r;
+  - delete attributes.cx;
+  - delete attributes.cy;
+  - delete attributes.r;
+  - d = new Array;
+  - d.push("M" + cx + "," + cy);                             // go to center
+  - d.push("m" + r + ",0");                                // go right 
+  - d.push("a" + r + "," + r + " 0 1,0 " + (-r * 2) + ",0"); // draw half a circle clockwise
+  - d.push("a" + r + "," + r + " 0 1,0 " + (r * 2) + ",0");  // draw another half clockwise
+  - attributes.d = d.join(' ');
+  path&attributes(attributes)

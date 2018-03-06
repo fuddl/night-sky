@@ -1,0 +1,51 @@
+include concentric
+include label
+include centroid
+
+- var m = 50;
+- var padding = 60;
+svg(xmlns='http://www.w3.org/2000/svg', viewbox=(view.minX - padding)+' '+(view.minY - padding)+' '+ (view.w + padding*2)+' '+(view.h + padding*2), height="85cm" width="85cm")
+  style.
+    svg {
+      background: black;
+      width: 100vw;
+      height: 100vh;
+      background-color: #022c3e;
+    }
+    body {
+      margin: 0;
+    }
+  //-circle(cx="500", cy="500", r="500", stroke="white")
+  
+
+  defs
+    mask(id="frame-mask")
+      circle(cx=view.hCenter, cy=view.vCenter, r=(view.w/2), fill="white" id="frame")
+  rect(x=view.minX, y=view.minY, height=view.h, width=view.w, fill="#022c3e")
+  circle(cx=view.hCenter, cy=view.vCenter, r=(view.w)/2, fill="#022c3e" id="frame")
+
+  - var gridR = view.w/2;
+  //-+concentric-grid(cx=view.hCenter cy=view.vCenter min-r=view.w/19 r=gridR concentric-subdivisions=7, radial-subdivisions=24 stroke="white" stroke-width=.1)
+
+  g#stars(mask="url(#frame-mask)")
+    each star, key in catalog.stars
+      - var o = 1; //star.DEd > -20 ? 1 : .05;
+      if (star.DEd > 0)
+        if star.Name
+          //-+circular-marker(cx=view.hCenter, cy=view.vCenter, x=star.c.x, y=star.c.y, opacity=o)
+            = star.Name
+        
+        circle(cx=star.c.x, cy=star.c.y, r=((star.Vmag-maxVmag)*-1)/5, fill="white", id='hr-' + star.HR, opacity=o)
+  g#constellations(mask="url(#frame-mask)")
+    each cons, key in constellations
+      each connection in cons.stars
+        - var points = '';
+        each constar in connection
+          each star, key in catalog.stars
+            if star.HR == constar
+              - points += ' ' + star.c.x + ',' + star.c.y;
+        polyline(points=points, stroke="white", stroke-width=".2" fill="none")
+  path#ecliptic(d=ecliptic, stroke-width=".5", stroke="white", fill="none", stroke-dasharray=".5,2", mask="url(#frame-mask)")
+  each layer in milkyWay
+    path(d=layer, fill="white", opacity=".1")
+  circle(cx=view.hCenter cy=view.vCenter, r=gridR, stroke="none", fill="none" stroke-width=".5")

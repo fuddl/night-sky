@@ -1,0 +1,65 @@
+mixin marker(x, y, z)
+  - if (xOffset == null) { xOffset = .5; }
+  - if (yOffset == null) { yOffset = .6; }
+  - var dir = 'e';
+
+  circle.marker(cx=x, cy=y, r='.25', fill='white')&attributes(attributes)
+  if dir == 'w'
+    - var anchor = 'end'
+  text(x=x+xOffset, y=y+.15, fill="white" font-family='sans-serif', font-size='1' text-anchor=anchor)
+    block
+
+mixin circular-marker(label)
+  g
+    - function guid2() { function s4() { return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1); } return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4(); }
+    
+    - var cx = attributes['cx'];
+    - var cy = attributes['cy'];
+    - var x = attributes['x'];
+    - var y = attributes['y'];
+    //- circle(fill="white", cx=x, cy=y, r=2.5)
+    - var fill = attributes['fill'];
+    - var r = Math.sqrt(Math.pow(x - cx, 2) + Math.pow(y - cy, 2));
+    - var id = guid2();
+    - var theta = Math.acos((cx - x)/r);
+    if y < cy
+      - var A = Math.PI + theta;
+      - var sweep = 1;
+    else 
+      - var A = Math.PI - theta;
+      - var sweep = 0;
+    - var offset = (A*r) + 1;
+    mixin circular-marker__circle
+      - var start = attributes.start;
+      - var cx = attributes.cx;
+      - var cy = attributes.cy;
+      - var r = attributes.r;
+      - delete attributes.cx;
+      - delete attributes.cy;              
+      - delete attributes.r;
+      - d = new Array;
+      - var startX = Math.cos(start+Math.PI)*r + cx;
+      - var startY = Math.sin(start+Math.PI)*r + cy;
+      - var middleX = Math.cos(start)*r + cx;
+      - var middleY = Math.sin(start)*r + cy;   
+      - d.push("M" + startX + "," + startY);
+      
+      
+      //- draw half a circle clockwise
+      - d.push("A" + r + "," + r + " 0 1," + sweep + " " +  middleX + "," + middleY); 
+
+      //- draw another half clockwise
+      - d.push("A" + r + "," + r + " 0 1," + sweep + " " +  startX + "," + startY);  
+      
+      - d.push("M" + startX + "," + startY);
+     
+      - attributes.d = d.join(' ');
+      path&attributes(attributes)
+    +circular-marker__circle(cx=cx, cy=cy, r=r, fill="none", stroke="none", id=id, start=A)
+    text(text-anchor="middle", fill="black", font-family="sans-serif")
+      textPath(href='#' + id, startOffset="50%", font-size="20")
+        tspan(dy=4, dx=4)= attributes.label
+    if attributes.subtitle
+      text(text-anchor="middle", fill="black", font-family="sans-serif", style="font-style:italic", font-size="10", letter-spacing="1")
+        textPath(href='#' + id, startOffset="50%")
+        tspan(dy=15, dx=4)= attributes.subtitle

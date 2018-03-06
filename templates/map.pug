@@ -1,0 +1,205 @@
+include label
+
+- function guid() { function s4() { return Math.floor((1 + Math.random()) * 0x10000).toString(16).substring(1); } return s4() + s4() + '-' + s4() + '-' + s4() + '-' + s4() + '-' + s4() + s4() + s4(); }
+
+if style == 'textbook'
+  - vbg = 'black'
+  - starcolor = 'white'
+if style == 'textbook'
+  - vbg = 'white'
+  - starcolor = 'black'
+
+- var p = 100;
+- var viewbox = [p*-1, p*-1, stage.w+p*2, stage.h+p*2];
+
+svg(xmlns='http://www.w3.org/2000/svg', width=stage.w+(p*2), height=stage.h+(p*2), viewBox=viewbox.join(' '))
+  defs
+    style.
+    case style
+      when 'textbook'
+        style.
+          .foo {
+            bar: bau;
+          }
+          #sky {
+            fill: #0d4874;
+            stroke-width: 10;
+            stroke: #0d4874;
+          }
+          .star {
+            fill: white;
+          }
+          .star-background {
+            stroke: #0d4874;
+            stroke-width: 5;
+          }
+          .graticule {
+            stroke: black;
+            stroke-width: 1;
+            fill: none;
+          }
+          .graticule-background {
+            stroke: #0d4874;
+            stroke-width: 2;
+            fill: none;
+          }
+          #ecliptic {
+            fill: none;
+          }
+          .ecliptic-foreground {
+            stroke: black;
+            stroke-width: 3;
+            fill: none;
+            stroke-dasharray: 10, 10
+          }
+          .ecliptic-outline {
+            stroke: black;
+            fill: none;
+            stroke-width: 4;
+          }
+          .ecliptic-background {
+            stroke: #0d4874;
+            fill: none;
+            stroke-width: 1;
+            fill: none;
+          }
+          #constellations line {
+            stroke-width: 1; 
+            stroke: black;
+          }
+          #constellations polyline{
+            stroke: #0d4874;
+            stroke-width: 2.5;
+            fill: none;
+          }
+          #labels text {
+            stroke: #0d4874;
+            stroke-width: 2.5;
+            fill: black;
+            paint-order: stroke;
+          }
+      when 'futura'
+        style.
+          .foo {
+            bar: baz;
+          }
+          .graticule {
+            stroke: white;
+            fill: none;
+            stroke-dasharray: 1,2;
+          }
+          .graticule-background {
+            fill: none; 
+          }
+          #ecliptic {
+            fill: none;
+            stroke: white;
+            stroke-width: 3;
+            stroke-dasharray: 1,1;
+          }
+          #sky {
+            fill: black;
+          }
+          .star {
+            fill: #F7E7CE;
+          }
+          svg {
+            background: black;
+          }
+          #constellations line {
+            stroke-width: 1; 
+            stroke: white;
+          }
+          #constellations polyline{
+            stroke: black;
+            stroke-width: 2.5;
+            fill: none;
+          }
+    clipPath#sky-clip
+      path#sky-path(d=sky)
+    radialGradient#star-spike
+      stop(offset="0" stop-color="white" stop-opacity="1")
+      stop(offset="100%" stop-color="white"  stop-opacity="0")
+    g#spiky-star
+      ellipse(fill="url(#star-spike)" rx=.5, ry=20)
+      ellipse(fill="url(#star-spike)" rx=20, ry=.5)
+    each layer, key in milkyWay
+      if style == 'textbook'
+        pattern(width="3" height="3", patternUnits="userSpaceOnUse", id="dots-" + key)
+          - let m = (key+1);
+          circle(cx=0, cy=0, r=.05*m, fill="white")
+          circle(cx=0, cy=3, r=.05*m, fill="white")
+          circle(cx=3, cy=3, r=.05*m, fill="white")
+          circle(cx=3, cy=0, r=.05*m, fill="white")
+          circle(cx=1.5, cy=1.5, r=.05*m, fill="white")
+      if style == 'futura'
+        pattern(width="10" height="10", patternUnits="userSpaceOnUse", id="dots-" + key)
+          path(d='M-1,1 l2,-2 M0,10 l10,-10 M9,11 l2,-2', stroke="white", stroke-width=.001*m, opacity=.25)
+
+  path#sky(d=sky)
+  g#milky-way
+    each layer, key in milkyWay
+      path(d=layer, fill="url(#dots-" + (key+1) + ")", fill-rule="evenodd")
+  if style == 'textbook'
+    - var clip = "url(#sky-clip)"
+  g#graticule
+    each dir in graticule
+      each line in dir
+        if !line.match(/^M-I/)
+          path.graticule-background(d=line, clip-path="url(#sky-clip)")
+    each dir in graticule
+      each line in dir
+        if !line.match(/^M-I/)
+          path.graticule(d=line, clip-path=clip)
+  if style == 'textbook'
+    path.ecliptic-outline(d=ecliptic, clip-path="url(#sky-clip)")
+    path.ecliptic-background(d=ecliptic, clip-path="url(#sky-clip)")
+    path.ecliptic-foreground(d=ecliptic, clip-path="url(#sky-clip)")
+  path#ecliptic(d=ecliptic)
+  g#constellations(clip-path=clip)
+    each cons, key in constellations
+      - var cid = key;
+      g(id=cid)
+        - var coords = [];
+        each connection in cons.stars
+          
+          - var points = '';
+          each constar in connection
+            each star, key in stars
+              if star.HR == constar
+                - points += ' ' + star.c.x + ',' + star.c.y;
+                use.star-background(href='#hr-' + star.HR)
+                - coords.push({x: star.c.x, y: star.c.y})
+          polyline(points=points)
+
+          - var thisstar = {};
+          - var laststar = false;
+          - var count = 0;
+          each constar in connection
+            each star, key2 in stars
+              if star.HR == constar
+                - thisstar = star.c;
+                if laststar
+                  - let id = cid + '-' + guid();
+                  - let cx = (laststar.x + thisstar.x) / 2;
+                  - let cy = (laststar.y + thisstar.y) / 2;
+                  - let r = Math.sqrt(Math.pow((laststar.x - thisstar.x), 2) + Math.pow((laststar.y -thisstar.y), 2)) / 2;
+                  if r - 5 > 0
+                    defs: clipPath(id=id): circle(cx=cx, cy=cy, r=r-5)
+                    line(x1=laststar.x, y1=laststar.y, x2=thisstar.x, y2=thisstar.y, clip-path='url(#' + id +')')
+            - laststar = thisstar;
+        - constellations[key].center = getCenter(coords);
+
+  if style == 'textbook' 
+    g#stars(clip-path=clip)
+      each star, key in stars
+        - var r = ((star.Vmag-12)*-1)/7;
+        circle.star(cx=star.c.x, cy=star.c.y, r=r, fill="black", id='hr-' + star.HR)
+        if star.Vmag < 2
+          use(href="#spiky-star", x=star.c.x, y=star.c.y,)
+  if lang != 'zxx'
+    g#labels(clip-path=clip)
+      each cons, key in constellations
+        - var subtitle = cons.wikidata.labels[lang] ? cons.wikidata.labels[lang].value : '';
+        - subtitle = subtitle != cons.name ? subtitle : false;
+        +circular-marker(x=cons.center.x, y=cons.center.y, cx=stage.w/2 cy=stage.h/2, label=cons.name, subtitle=subtitle)

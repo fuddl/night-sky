@@ -1,0 +1,5 @@
+mixin centroid(locations)
+  - console.log(catalog[locations[0]].coordinates.x);
+  - cx = (catalog[locations[0]].coordinates.x + catalog[locations[1]].coordinates.x + catalog[locations[2]].coordinates.x) / 3;
+  - cy = (catalog[locations[0]].coordinates.y + catalog[locations[1]].coordinates.y + catalog[locations[2]].coordinates.y) / 3;
+  circle(cx=cx, cy=cy, r=15, stroke="white")
